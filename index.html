@@ -193,7 +193,7 @@
       console.log('Sending GET request to:', scriptUrl);
       const response = await fetch(scriptUrl, {
         method: 'GET',
-        mode: 'cors'
+        redirect: 'follow' // Added for consistency
       });
       console.log('GET Response Status:', response.status);
       if (!response.ok) {
