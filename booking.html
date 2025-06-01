@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Booking Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      padding: 20px;
+      max-width: 800px;
+    }
+    .form-section, .table-section, .action-section {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .btn-primary, .btn-secondary {
+      width: 100%;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    .form-label {
+      font-weight: bold;
+    }
+    .table-responsive {
+      font-size: 0.9rem;
+    }
+    #response {
+      margin-top: 10px;
+    }
+    @media (max-width: 576px) {
+      .container {
+        padding: 10px;
+      }
+      .btn-primary, .btn-secondary {
+        font-size: 1rem;
+      }
+      .form-section, .table-section {
+        padding: 15px;
+      }
+      .table-responsive {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4" id="vendorTitle">Vendor Booking Tracker</h1>
+    <div class="action-section">
+      <button id="addBookingBtn" class="btn btn-primary">Add Booking</button>
+      <button id="viewBookingsBtn" class="btn btn-secondary">View Bookings</button>
+    </div>
+    <div class="form-section" id="formSection" style="display: none;">
+      <form id="bookingForm">
+        <div class="mb-3">
+          <label for="orderedDate" class="form-label">Ordered Date</label>
+          <input type="date" class="form-control" id="orderedDate" required>
+        </div>
+        <div class="mb-3">
+          <label for="platform" class="form-label">Platform</label>
+          <select class="form-select" id="platform" required>
+            <option value="">Select Platform</option>
+            <option value="Amazon">Amazon</option>
+            <option value="Flipkart">Flipkart</option>
+            <option value="eBay">eBay</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="phoneModel" class="form-label">Phone Model</label>
+          <input type="text" class="form-control" id="phoneModel" required>
+        </div>
+        <div class="mb-3">
+          <label for="cardUsed" class="form-label">Card Used</label>
+          <input type="text" class="form-control" id="cardUsed" required>
+        </div>
+        <div class="mb-3">
+          <label for="bookingAmount" class="form-label">Booking Amount</label>
+          <input type="number" step="0.01" class="form-control" id="bookingAmount" required>
+        </div>
+        <div class="mb-3">
+          <label for="cbCharges" class="form-label">CB/Charges</label>
+          <input type="number" step="0.01" class="form-control" id="cbCharges">
+        </div>
+        <div class="mb-3">
+          <label for="netLanding" class="form-label">Net Landing</label>
+          <input type="number" step="0.01" class="form-control" id="netLanding" required>
+        </div>
+        <div class="mb-3">
+          <label for="returnAmount" class="form-label">Return Amount</label>
+          <input type="number" step="0.01" class="form-control" id="returnAmount">
+        </div>
+        <div class="mb-3">
+          <label for="paid" class="form-label">Paid</label>
+          <input type="number" step="0.01" class="form-control" id="paid">
+        </div>
+        <div class="mb-3">
+          <label for="balance" class="form-label">Balance</label>
+          <input type="number" step="0.01" class="form-control" id="balance" readonly>
+        </div>
+        <div class="mb-3">
+          <label for="profit" class="form-label">Profit</label>
+          <input type="number" step="0.01" class="form-control" id="profit" readonly>
+        </div>
+        <div class="mb-3">
+          <label for="profitPercentage" class="form-label">Profit Percentage</label>
+          <input type="number" step="0.01" class="form-control" id="profitPercentage" readonly>
+        </div>
+        <div class="mb-3">
+          <label for="paymentStatus" class="form-label">Payment Status</label>
+          <select class="form-select" id="paymentStatus" required>
+            <option value="">Select Status</option>
+            <option value="Completed">Completed</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="paymentDate" class="form-label">Payment Date</label>
+          <input type="date" class="form-control" id="paymentDate">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Booking</button>
+      </form>
+      <div id="response"></div>
+    </div>
+    <div class="table-section" id="tableSection" style="display: none;">
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered" id="bookingsTable">
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th>Ordered Date</th>
+              <th>Platform</th>
+              <th>Phone Model</th>
+              <th>Card Used</th>
+              <th>Booking Amount</th>
+              <th>CB/Charges</th>
+              <th>Net Landing</th>
+              <th>Return Amount</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Profit</th>
+              <th>Profit %</th>
+              <th>Payment Status</th>
+              <th>Payment Date</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('bookingForm');
+    const responseDiv = document.getElementById('response');
+    const addBookingBtn = document.getElementById('addBookingBtn');
+    const viewBookingsBtn = document.getElementById('viewBookingsBtn');
+    const formSection = document.getElementById('formSection');
+    const tableSection = document.getElementById('tableSection');
+    const bookingsBody = document.getElementById('bookingsBody');
+    const vendorTitle = document.getElementById('vendorTitle');
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxvEmD7E2u9-rdgfQKg3NRbeOZIqZQ8AMVBwY70oNKpubdKgRn0AiLh5BTazmrn6CV0cg/exec';
+    
+    // Get selected vendor
+    const selectedVendor = localStorage.getItem('selectedVendor') || 'Unknown';
+    vendorTitle.textContent = `${selectedVendor} - Booking Tracker`;
+
+    // Auto-calculate fields
+    function calculateFields() {
+      const bookingAmount = parseFloat(form.bookingAmount.value) || 0;
+      const paid = parseFloat(form.paid.value) || 0;
+      const netLanding = parseFloat(form.netLanding.value) || 0;
+      const returnAmount = parseFloat(form.returnAmount.value) || 0;
+      const balance = bookingAmount - paid;
+      form.balance.value = balance.toFixed(2);
+      const profit = netLanding - returnAmount;
+      form.profit.value = profit.toFixed(2);
+      const profitPercentage = bookingAmount > 0 ? (profit / bookingAmount) * 100 : 0;
+      form.profitPercentage.value = profitPercentage.toFixed(2);
+    }
+
+    ['bookingAmount', 'paid', 'netLanding', 'returnAmount'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calculateFields);
+    });
+
+    // Toggle sections
+    addBookingBtn.addEventListener('click', () => {
+      formSection.style.display = 'block';
+      tableSection.style.display = 'none';
+      form.reset();
+      calculateFields();
+    });
+
+    viewBookingsBtn.addEventListener('click', async () => {
+      formSection.style.display = 'none';
+      tableSection.style.display = 'block';
+      try {
+        console.log('Sending GET request to:', scriptUrl);
+        const response = await fetch(`${scriptUrl}?vendor=${encodeURIComponent(selectedVendor)}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        console.log('GET Response Status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('GET Response:', result);
+        if (result.status === 'success') {
+          bookingsBody.innerHTML = '';
+          result.data.forEach(booking => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${booking.vendor}</td>
+              <td>${booking.orderedDate}</td>
+              <td>${booking.platform}</td>
+              <td>${booking.phoneModel}</td>
+              <td>${booking.cardUsed}</td>
+              <td>${booking.bookingAmount}</td>
+              <td>${booking.cbCharges || ''}</td>
+              <td>${booking.netLanding}</td>
+              <td>${booking.returnAmount}</td>
+              <td>${booking.paid}</td>
+              <td>${booking.balance}</td>
+              <td>${booking.profit}</td>
+              <td>${booking.profitPercentage}</td>
+              <td>${booking.paymentStatus}</td>
+              <td>${booking.paymentDate || ''}</td>
+              <td>${new Date(booking.timestamp).toLocaleString()}</td>
+            `;
+            bookingsBody.appendChild(row);
+          });
+        } else {
+          responseDiv.innerHTML = `<p class="text-danger">${result.message}</p>`;
+        }
+      } catch (error) {
+        responseDiv.innerHTML = `<p class="text-danger">GET Error: ${error.message}</p>`;
+        console.error('GET Error:', error);
+      }
+    });
+
+    // Handle form submission (POST)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        vendor: selectedVendor,
+        orderedDate: form.orderedDate.value || '',
+        platform: form.platform.value || '',
+        phoneModel: form.phoneModel.value || '',
+        cardUsed: form.cardUsed.value || '',
+        bookingAmount: form.bookingAmount.value || '0',
+        cbCharges: form.cbCharges.value || '',
+        netLanding: form.netLanding.value || '0',
+        returnAmount: form.returnAmount.value || '0',
+        paid: form.paid.value || '0',
+        balance: form.balance.value || '0',
+        profit: form.profit.value || '0',
+        profitPercentage: form.profitPercentage.value || '0',
+        paymentStatus: form.paymentStatus.value || '',
+        paymentDate: form.paymentDate.value || ''
+      };
+      console.log('POST Payload:', data);
+      try {
+        const response = await fetch(scriptUrl, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(data)
+        });
+        console.log('POST Response Status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('POST Response:', result);
+        responseDiv.innerHTML = `<p class="text-success">${result.message}</p>`;
+        form.reset();
+        calculateFields();
+      } catch (error) {
+        responseDiv.innerHTML = `<p class="text-danger">POST Error: ${error.message}</p>`;
+        console.error('POST Error:', error);
+      }
+    });
+  </script>
+</body>
+</html>
