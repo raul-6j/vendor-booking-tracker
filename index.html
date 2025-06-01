@@ -120,90 +120,118 @@
   </table>
 
   <script>
-    const form = document.getElementById('bookingForm');
-    const responseDiv = document.getElementById('response');
-    const fetchButton = document.getElementById('fetchBookings');
-    const bookingsTable = document.getElementById('bookingsTable');
-    const bookingsBody = document.getElementById('bookingsBody');
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxvEmD7E2u9-rdgfQKg3NRbeOZIqZQ8AMVBwY70oNKpubdKgRn0AiLh5BTazmrn6CV0cg/exec'; // Replace with your Web app URL
+  const form = document.getElementById('bookingForm');
+  const responseDiv = document.getElementById('response');
+  const fetchButton = document.getElementById('fetchBookings');
+  const bookingsTable = document.getElementById('bookingsTable');
+  const bookingsBody = document.getElementById('bookingsBody');
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbxvEmD7E2u9-rdgfQKg3NRbeOZIqZQ8AMVBwY70oNKpubdKgRn0AiLh5BTazmrn6CV0cg/exec';
 
-    // Handle form submission
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const data = {
-        orderedDate: form.orderedDate.value,
-        platform: form.platform.value,
-        phoneModel: form.phoneModel.value,
-        cardUsed: form.cardUsed.value,
-        bookingAmount: form.bookingAmount.value,
-        cbCharges: form.cbCharges.value,
-        netLanding: form.netLanding.value,
-        returnAmount: form.returnAmount.value || 0,
-        paid: form.paid.value || 0,
-        balance: form.balance.value,
-        profit: form.profit.value,
-        profitPercentage: form.profitPercentage.value,
-        paymentStatus: form.paymentStatus.value,
-        paymentDate: form.paymentDate.value
-      };
+  // Auto-calculate fields
+  function calculateFields() {
+    const bookingAmount = parseFloat(form.bookingAmount.value) || 0;
+    const paid = parseFloat(form.paid.value) || 0;
+    const netLanding = parseFloat(form.netLanding.value) || 0;
+    const returnAmount = parseFloat(form.returnAmount.value) || 0;
+    const balance = bookingAmount - paid;
+    form.balance.value = balance.toFixed(2);
+    const profit = netLanding - returnAmount;
+    form.profit.value = profit.toFixed(2);
+    const profitPercentage = bookingAmount > 0 ? (profit / bookingAmount) * 100 : 0;
+    form.profitPercentage.value = profitPercentage.toFixed(2);
+  }
 
-      try {
-        const response = await fetch(scriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-          mode: 'cors'
-        });
+  ['bookingAmount', 'paid', 'netLanding', 'returnAmount'].forEach(id => {
+    form[id].addEventListener('input', calculateFields);
+  });
 
-        const result = await response.json();
-        responseDiv.innerHTML = `<p style="color: green;">${result.message}</p>`;
-        form.reset();
-      } catch (error) {
-        responseDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+  // Handle form submission (POST)
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      orderedDate: form.orderedDate.value,
+      platform: form.platform.value,
+      phoneModel: form.phoneModel.value,
+      cardUsed: form.cardUsed.value,
+      bookingAmount: form.bookingAmount.value,
+      cbCharges: form.cbCharges.value,
+      netLanding: form.netLanding.value,
+      returnAmount: form.returnAmount.value || 0,
+      paid: form.paid.value || 0,
+      balance: form.balance.value,
+      profit: form.profit.value,
+      profitPercentage: form.profitPercentage.value,
+      paymentStatus: form.paymentStatus.value,
+      paymentDate: form.paymentDate.value
+    };
+    console.log('POST Payload:', data);
+    try {
+      const response = await fetch(scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        mode: 'cors'
+      });
+      console.log('POST Response Status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    });
+      const result = await response.json();
+      console.log('POST Response:', result);
+      responseDiv.innerHTML = `<p style="color: green;">${result.message}</p>`;
+      form.reset();
+    } catch (error) {
+      responseDiv.innerHTML = `<p style="color: red;">POST Error: ${error.message}</p>`;
+      console.error('POST Error:', error);
+    }
+  });
 
-    // Handle fetching bookings
-    fetchButton.addEventListener('click', async () => {
-      try {
-        const response = await fetch(scriptUrl, {
-          method: 'GET',
-          mode: 'cors'
-        });
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          bookingsBody.innerHTML = ''; // Clear existing rows
-          result.data.forEach(booking => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${booking.orderedDate}</td>
-              <td>${booking.platform}</td>
-              <td>${booking.phoneModel}</td>
-              <td>${booking.cardUsed}</td>
-              <td>${booking.bookingAmount}</td>
-              <td>${booking.cbCharges || ''}</td>
-              <td>${booking.netLanding}</td>
-              <td>${booking.returnAmount}</td>
-              <td>${booking.paid}</td>
-              <td>${booking.balance}</td>
-              <td>${booking.profit}</td>
-              <td>${booking.profitPercentage}</td>
-              <td>${booking.paymentStatus}</td>
-              <td>${booking.paymentDate || ''}</td>
-              <td>${new Date(booking.timestamp).toLocaleString()}</td>
-            `;
-            bookingsBody.appendChild(row);
-          });
-          bookingsTable.style.display = 'table';
-        } else {
-          responseDiv.innerHTML = `<p style="color: red;">Error: ${result.message}</p>`;
-        }
-      } catch (error) {
-        responseDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+  // Handle fetching bookings (GET)
+  fetchButton.addEventListener('click', async () => {
+    try {
+      console.log('Sending GET request to:', scriptUrl);
+      const response = await fetch(scriptUrl, {
+        method: 'GET',
+        mode: 'cors'
+      });
+      console.log('GET Response Status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    });
-  </script>
+      const result = await response.json();
+      console.log('GET Response:', result);
+      if (result.status === 'success') {
+        bookingsBody.innerHTML = '';
+        result.data.forEach(booking => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${booking.orderedDate}</td>
+            <td>${booking.platform}</td>
+            <td>${booking.phoneModel}</td>
+            <td>${booking.cardUsed}</td>
+            <td>${booking.bookingAmount}</td>
+            <td>${booking.cbCharges || ''}</td>
+            <td>${booking.netLanding}</td>
+            <td>${booking.returnAmount}</td>
+            <td>${booking.paid}</td>
+            <td>${booking.balance}</td>
+            <td>${booking.profit}</td>
+            <td>${booking.profitPercentage}</td>
+            <td>${booking.paymentStatus}</td>
+            <td>${booking.paymentDate || ''}</td>
+            <td>${new Date(booking.timestamp).toLocaleString()}</td>
+          `;
+          bookingsBody.appendChild(row);
+        });
+        bookingsTable.style.display = 'table';
+      } else {
+        responseDiv.innerHTML = `<p style="color: red;">Error: ${result.message}</p>`;
+      }
+    } catch (error) {
+      responseDiv.innerHTML = `<p style="color: red;">GET Error: ${error.message}</p>`;
+      console.error('GET Error:', error);
+    }
+  });
+</script>
 </body>
 </html>
