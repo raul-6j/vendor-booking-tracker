@@ -149,28 +149,28 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
-      orderedDate: form.orderedDate.value,
-      platform: form.platform.value,
-      phoneModel: form.phoneModel.value,
-      cardUsed: form.cardUsed.value,
-      bookingAmount: form.bookingAmount.value,
-      cbCharges: form.cbCharges.value,
-      netLanding: form.netLanding.value,
-      returnAmount: form.returnAmount.value || 0,
-      paid: form.paid.value || 0,
-      balance: form.balance.value,
-      profit: form.profit.value,
-      profitPercentage: form.profitPercentage.value,
-      paymentStatus: form.paymentStatus.value,
-      paymentDate: form.paymentDate.value
+      orderedDate: form.orderedDate.value || '',
+      platform: form.platform.value || '',
+      phoneModel: form.phoneModel.value || '',
+      cardUsed: form.cardUsed.value || '',
+      bookingAmount: form.bookingAmount.value || '0',
+      cbCharges: form.cbCharges.value || '',
+      netLanding: form.netLanding.value || '0',
+      returnAmount: form.returnAmount.value || '0',
+      paid: form.paid.value || '0',
+      balance: form.balance.value || '0',
+      profit: form.profit.value || '0',
+      profitPercentage: form.profitPercentage.value || '0',
+      paymentStatus: form.paymentStatus.value || '',
+      paymentDate: form.paymentDate.value || ''
     };
     console.log('POST Payload:', data);
     try {
       const response = await fetch(scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        mode: 'cors'
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(data)
       });
       console.log('POST Response Status:', response.status);
       if (!response.ok) {
@@ -180,6 +180,7 @@
       console.log('POST Response:', result);
       responseDiv.innerHTML = `<p style="color: green;">${result.message}</p>`;
       form.reset();
+      calculateFields(); // Reset calculated fields
     } catch (error) {
       responseDiv.innerHTML = `<p style="color: red;">POST Error: ${error.message}</p>`;
       console.error('POST Error:', error);
