@@ -14,14 +14,14 @@
       padding: 20px;
       max-width: 800px;
     }
-    .form-section, .table-section, .action-section {
+    .section {
       background-color: #fff;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
-    .btn-primary, .btn-secondary {
+    .btn {
       width: 100%;
       margin-bottom: 10px;
       font-size: 1.1rem;
@@ -32,6 +32,9 @@
     .table-responsive {
       font-size: 0.9rem;
     }
+    .payment-summary {
+      font-size: 1.1rem;
+    }
     #response {
       margin-top: 10px;
     }
@@ -39,14 +42,17 @@
       .container {
         padding: 10px;
       }
-      .btn-primary, .btn-secondary {
+      .btn {
         font-size: 1rem;
       }
-      .form-section, .table-section {
+      .section {
         padding: 15px;
       }
       .table-responsive {
         font-size: 0.8rem;
+      }
+      .payment-summary {
+        font-size: 1rem;
       }
     }
   </style>
@@ -54,11 +60,12 @@
 <body>
   <div class="container">
     <h1 class="text-center mb-4" id="vendorTitle">Vendor Booking Tracker</h1>
-    <div class="action-section">
+    <div class="section action-section">
       <button id="addBookingBtn" class="btn btn-primary">Add Booking</button>
       <button id="viewBookingsBtn" class="btn btn-secondary">View Bookings</button>
+      <button id="viewPaymentBtn" class="btn btn-info">View Payment Summary</button>
     </div>
-    <div class="form-section" id="formSection" style="display: none;">
+    <div class="section form-section" id="formSection" style="display: none;">
       <form id="bookingForm">
         <div class="mb-3">
           <label for="orderedDate" class="form-label">Ordered Date</label>
@@ -129,12 +136,11 @@
       </form>
       <div id="response"></div>
     </div>
-    <div class="table-section" id="tableSection" style="display: none;">
+    <div class="section table-section" id="tableSection" style="display: none;">
       <div class="table-responsive">
         <table class="table table-striped table-bordered" id="bookingsTable">
           <thead>
             <tr>
-              <th>Vendor</th>
               <th>Ordered Date</th>
               <th>Platform</th>
               <th>Phone Model</th>
@@ -156,18 +162,31 @@
         </table>
       </div>
     </div>
+    <div class="section payment-section" id="paymentSection" style="display: none;">
+      <h3>Payment Summary</h3>
+      <div class="payment-summary">
+        <p><strong>Total Return Amount:</strong> <span id="totalReturnAmount">0.00</span></p>
+        <p><strong>Total Paid:</strong> <span id="totalPaid">0.00</span></p>
+        <p><strong>Total Balance:</strong> <span id="totalBalance">0.00</span></p>
+      </div>
+    </div>
   </div>
   <script>
     const form = document.getElementById('bookingForm');
     const responseDiv = document.getElementById('response');
     const addBookingBtn = document.getElementById('addBookingBtn');
     const viewBookingsBtn = document.getElementById('viewBookingsBtn');
+    const viewPaymentBtn = document.getElementById('viewPaymentBtn');
     const formSection = document.getElementById('formSection');
     const tableSection = document.getElementById('tableSection');
+    const paymentSection = document.getElementById('paymentSection');
     const bookingsBody = document.getElementById('bookingsBody');
     const vendorTitle = document.getElementById('vendorTitle');
+    const totalReturnAmount = document.getElementById('totalReturnAmount');
+    const totalPaid = document.getElementById('totalPaid');
+    const totalBalance = document.getElementById('totalBalance');
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbxvEmD7E2u9-rdgfQKg3NRbeOZIqZQ8AMVBwY70oNKpubdKgRn0AiLh5BTazmrn6CV0cg/exec';
-    
+
     // Get selected vendor
     const selectedVendor = localStorage.getItem('selectedVendor') || 'Unknown';
     vendorTitle.textContent = `${selectedVendor} - Booking Tracker`;
@@ -191,16 +210,20 @@
     });
 
     // Toggle sections
+    function showSection(section) {
+      formSection.style.display = section === 'form' ? 'block' : 'none';
+      tableSection.style.display = section === 'table' ? 'block' : 'none';
+      paymentSection.style.display = section === 'payment' ? 'block' : 'none';
+    }
+
     addBookingBtn.addEventListener('click', () => {
-      formSection.style.display = 'block';
-      tableSection.style.display = 'none';
+      showSection('form');
       form.reset();
       calculateFields();
     });
 
     viewBookingsBtn.addEventListener('click', async () => {
-      formSection.style.display = 'none';
-      tableSection.style.display = 'block';
+      showSection('table');
       try {
         console.log('Sending GET request to:', scriptUrl);
         const response = await fetch(`${scriptUrl}?vendor=${encodeURIComponent(selectedVendor)}`, {
@@ -218,7 +241,6 @@
           result.data.forEach(booking => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${booking.vendor}</td>
               <td>${booking.orderedDate}</td>
               <td>${booking.platform}</td>
               <td>${booking.phoneModel}</td>
@@ -243,6 +265,33 @@
       } catch (error) {
         responseDiv.innerHTML = `<p class="text-danger">GET Error: ${error.message}</p>`;
         console.error('GET Error:', error);
+      }
+    });
+
+    viewPaymentBtn.addEventListener('click', async () => {
+      showSection('payment');
+      try {
+        console.log('Sending GET payment request to:', scriptUrl);
+        const response = await fetch(`${scriptUrl}?vendor=${encodeURIComponent(selectedVendor)}&action=payment`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        console.log('GET Payment Response Status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('GET Payment Response:', result);
+        if (result.status === 'success') {
+          totalReturnAmount.textContent = result.data.totalReturnAmount;
+          totalPaid.textContent = result.data.totalPaid;
+          totalBalance.textContent = result.data.totalBalance;
+        } else {
+          responseDiv.innerHTML = `<p class="text-danger">${result.message}</p>`;
+        }
+      } catch (error) {
+        responseDiv.innerHTML = `<p class="text-danger">Payment Error: ${error.message}</p>`;
+        console.error('Payment Error:', error);
       }
     });
 
